@@ -5,7 +5,7 @@ from typing import List
 
 import requests
 from bs4 import BeautifulSoup
-
+from helpers.byPlayer import ByPlayer
 
 class AcquisitionController:
     _links = {
@@ -13,6 +13,21 @@ class AcquisitionController:
             "https://bjabo8888.com/page/manager/login.jsp",
             "https://bjabo8888.com/login/manager/managerController/login",
             "https://bjabo8888.com/manager/AffiliateController/searchPerformancePlayerReport",
+        ],
+        "SIX6S": [
+            "https://666666bo.com/page/manager/login.jsp",
+            "https://666666bo.com/login/manager/managerController/login",
+            "https://666666bo.com/manager/AffiliateController/searchPerformancePlayerReport",
+        ],
+        "JEETBUZZ": [
+            "https://jbbo8888.com/page/manager/login.jsp",
+            "https://jbbo8888.com/login/manager/managerController/login",
+            "https://jbbo8888.com/manager/AffiliateController/searchPerformancePlayerReport",
+        ],
+        "CITINOW": [
+            "https://ctncps.com/page/manager/login.jsp",
+            "https://ctncps.com/login/manager/managerController/login",
+            "https://ctncps.com/manager/AffiliateController/searchPerformancePlayerReport",
         ],
     }
 
@@ -57,7 +72,8 @@ class AcquisitionController:
 
         all_rows = []
         # ---- iterate batches of N keywords ---------------------------------
-        for start in range(0, len(keywords), batch_size):
+        keywords_to_use = keywords[2:]          # everything from index 2 onward
+        for start in range(0, len(keywords_to_use), batch_size):
             batch = keywords[start : start + batch_size]
             # ---- page through 100‑row blocks until exhausted -------------
             page = 1
@@ -86,19 +102,23 @@ class AcquisitionController:
                     break
 
                 payload = resp.json()
-                rows = payload.get("aaData", [])
-                all_rows.extend(rows)
+                all_rows.extend(payload.get("aaData", []))
 
-                # stop paging if fewer than max rows returned
-                if len(rows) < page_size:
+                # stop when less than full page returned
+                if len(payload.get("aaData", [])) < page_size:
                     break
                 page += 1
 
+        # ---- end of batches -----------------------------------------------
+        byPlayer = ByPlayer()  # Import the helper class
+        # 🔄  Delegate filtering/renaming to the helper
+        filtered_rows = byPlayer.filter_rows(all_rows)
+
         return {
             "status": 200,
-            "text": "Data fetched successfully.",
-            "data": all_rows,
-            "total": len(all_rows),
+            "text": "Data fetched and filtered successfully.",
+            "data": filtered_rows,
+            "total": len(filtered_rows),
         }
 
     # ────────────────────────────────────────────────────────────

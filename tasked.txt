@@ -1,0 +1,6 @@
+Acquisation colum by player:
+Affiliate Username, Currency, Registered Users, Number of FD, FD, AP, TD, TW,TT,TP&L,TB
+
+By Acquisation:
+Affiliate Username, Currency, Username, Total Deposit, Total Withdrawal, Total Number Of Bets, 
+Total Turnover, Total Profit&loss Total Bonus
