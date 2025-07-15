@@ -1,7 +1,7 @@
 # helpers/by_player.py
 from typing import List, Dict, Any
 
-class ByPlayer:
+class ByAffiliate:
     """
     Format acquisition rows (by player) so each row only contains
     the business‑friendly columns we care about.
@@ -11,10 +11,12 @@ class ByPlayer:
     DEFAULT_FIELD_MAP: Dict[str, str] = {
         "affiliateName":          "affiliate_username",
         "affiliateCurrency":      "currency",
-        "player":                 "player_username",
+        "registerCount":          "registered_users",
+        "firstDepositCount":      "number_of_fd",
+        "firstDeposit":           "first_deposit",
+        "activePlayer":           "active_player",
         "deposit":                "total_deposit",
         "withdrawal":             "total_withdrawal",
-        "betCount":               "total_number_of_bets",
         "turnover":               "total_turnover",
         "profit":                 "total_profit_and_loss",
         "bonus":                  "total_bonus",

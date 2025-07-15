@@ -31,6 +31,7 @@ class SpreadsheetController:
             rows = result.get("values", [])# list[list[str]]
             # ────────── flatten and strip blanks ──────────
             keywords = [row[0].strip() for row in rows if row and row[0].strip()]
+            print(f"Found {len(keywords)} keywords in range {self.range}.")
             return keywords    
             
         except HttpError as err:

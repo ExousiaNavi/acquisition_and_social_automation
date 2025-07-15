@@ -1,108 +1,162 @@
 """
-main.py – run back‑office fetch from AcquisitionController
+main.py — fetch SocialMedia first, then Affiliates (full‑field rows)
 """
-import os
-import json
+import os, json
 from datetime import datetime, timedelta
-from pathlib import Path
 from dotenv import load_dotenv
+from pathlib import Path
+from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
+from rich.console import Console
+
 from controllers.AcquisitionController import AcquisitionController
 from controllers.SpreadSheetController import SpreadsheetController
 from helpers.spreadsheet_controller import SpreadsheetController as Sheet
-# ───────────────────────────────────────────────────────────
-# 1. Load env vars from .env (only once, near program start)
-# ───────────────────────────────────────────────────────────
-load_dotenv()                      # reads .env into the process
 
-USERNAME = os.getenv("BO_USERNAME", "")
-PASSWORD = os.getenv("BO_PASSWORD","")
-SPREADSHEET=os.getenv("SOCIALMEDIA_SHEET", "")
+# ────────────────────────── ENV ──────────────────────────
+load_dotenv()
+USERNAME           = os.getenv("BO_USERNAME", "")
+PASSWORD           = os.getenv("BO_PASSWORD", "")
+SOCIAL_SHEET_ID    = os.getenv("SOCIALMEDIA_SHEET", "")
+AFFILIATE_SHEET_ID = os.getenv("AFFILIATE_SHEET", "")
 
-if not USERNAME or not PASSWORD or not SPREADSHEET:
-    raise RuntimeError("BO_USERNAME / BO_PASSWORD / SPREADSHEET missing in environment")
+if not all([USERNAME, PASSWORD, SOCIAL_SHEET_ID, AFFILIATE_SHEET_ID]):
+    raise RuntimeError("Missing BO_USERNAME / BO_PASSWORD / SOCIALMEDIA_SHEET / AFFILIATE_SHEET")
 
-# ───────────────────────────────────────────────────────────
-# 2. fetching data on gsheet
-# BAJI A1:A
-# SIX6S B1:B
-# JEETBUZZ C1:C
-# CITINOW D1:D
-# ───────────────────────────────────────────────────────────
+# ────────────────────── CONSTANTS ────────────────────────
+yday        = (datetime.now() - timedelta(days=1)).date()
+target_date = yday.strftime("%Y/%m/%d")   # 2025/07/14
+sheet_date  = yday.strftime("%d/%m/%Y")   # 14/07/2025
 
-# tasked = ["BAJI", "SIX6S", "JEETBUZZ", "CITINOW"]
-yesterday = (datetime.now() - timedelta(days=1)).date()
-targetdate = yesterday.strftime("%Y/%m/%d")  # → "2025/07/13"
-sheetdate = yesterday.strftime("%d/%m/%Y")  # → "2025/07/13"
-
-# ------------------------------------------------------------------
-# 1.  Map each brand to the exact range it lives in
-#     (sheet‑tab followed by cell range)
-# ------------------------------------------------------------------
-RANGES = {
-    "BAJI"     : "SocialMedia!A1:A",
-    "SIX6S"    : "SocialMedia!B1:B",
-    "JEETBUZZ" : "SocialMedia!C1:C",
-    "CITINOW"  : "SocialMedia!D1:D",
+SOCIAL_RANGES = {
+    "BAJI": "SocialMedia!A1:A",
+    "SIX6S": "SocialMedia!B1:B",
+    "JEETBUZZ": "SocialMedia!C1:C",
+    "CITINOW": "SocialMedia!D1:D",
+}
+AFFILIATE_RANGES = {
+    "BAJI": "Acquisition!A1:A",
+    "SIX6S": "Acquisition!B1:B",
+    "JEETBUZZ": "Acquisition!C1:C",
+    "CITINOW": "Acquisition!D1:D",
 }
 
-for brand, sheet_range in RANGES.items():
-    print(f"Fetching keywords for brand: {brand}")
-    
-    keys = SpreadsheetController(SPREADSHEET, sheet_range)
-    acq = AcquisitionController(email=USERNAME, password=PASSWORD, 
-                                currency='all', currency_type=-1, 
-                                # keyword=['richadspkr','adcashpkr','trafficnompkr','daoadpkr'], 
-                                brand=brand,
-                                targetdate=targetdate)  # Example date format
+# ────────────────────── HELPERS ──────────────────────────
+def build_social_row(rec):
+    return [
+        sheet_date, "", rec["affiliate_username"], rec["currency"],
+        rec["player_username"], rec["total_deposit"], rec["total_withdrawal"],
+        rec["total_number_of_bets"], rec["total_turnover"],
+        rec["total_profit_and_loss"], rec["total_bonus"]
+    ]
 
-    try:
-        # Read keywords from the spreadsheet
-        keywords = keys.get_keywords()
-        # print(keywords)
-        BRAND = keywords[0] if keywords else "BAJI"
-        DESTINATIONSHEET = keywords[1] if len(keywords) > 1 else SPREADSHEET
-        if not keywords:
-            raise ValueError("No keywords found in the spreadsheet.")
-        
-        print("Keywords fetched successfully:")
+def build_affiliate_row(rec):
+    return [
+        sheet_date, "", rec["affiliate_username"], rec["currency"],
+        rec["registered_users"], rec["number_of_fd"], rec["first_deposit"],
+        rec["active_player"], rec["total_deposit"],
+        rec.get("total_withdrawal", ""), rec.get("total_turnover", ""),
+        rec.get("total_profit_and_loss", ""), rec.get("total_bonus", ""),
+    ]
 
-        result = acq.fetch_bo_batched(keywords,targetdate, batch_size=5)
-        print("Total rows:", result["total"])
-        rows_dict = result["data"]                     # ← trimmed dicts
+def build_affiliate_row_socmed(rec):
+    return [
+        sheet_date, "", rec["affiliate_username"], rec["currency"],
+        rec["registered_users"], rec["number_of_fd"], rec["first_deposit"],
+        rec["active_player"]
+    ]
 
-        # 3. lay them out in the column order used by the sheet
-        sheet_rows = [
-            [
-                sheetdate,
-                "",
-                r["affiliate_username"],
-                r["currency"],
-                r["username"],
-                r["total_deposit"],
-                r["total_withdrawal"],
-                r["total_number_of_bets"],
-                r["total_turnover"],
-                r["total_profit_and_loss"],
-                r["total_bonus"],
-            ]
-            for r in rows_dict
-        ]
+console = Console(force_terminal=True,
+                  force_interactive=True,
+                  color_system="truecolor")
 
-        # 4. append in one request
-        sheet = Sheet(spreadsheet=DESTINATIONSHEET, tab="*Daily_Data (Player)")
-        last_row = sheet.append_rows_return_last(sheet_rows)
-        print(f"✓ Wrote {len(sheet_rows)} rows.  Last occupied row is now {last_row}.")
 
-        # # 2) Pick a path (defaults to project root)
-        # out_file = Path("bo_response.json")
+def fetch_dual(type, ac: AcquisitionController, kw, target_date, batch=5):
+    """Return both Affiliates and SocialMedia data in one dict."""
+    if type == "Affiliates":
+        aff_rows = ac.fetch_bo_batched("Affiliates",  kw, target_date, batch)["data"]
+        return {"data": aff_rows, "socmed_data": []}
+    else:
+        aff_rows = ac.fetch_bo_batched("SocialMedia",  kw, target_date, batch)["data"]
+        soc_rows = ac.fetch_bo_batched("SocialMedia", kw, target_date, batch)["data_socmed"]
+        return {"data": aff_rows, "socmed_data": soc_rows}
 
-        # # 3) Write prettified JSON
-        # with out_file.open("w", encoding="utf-8") as f:
-        #     json.dump(result, f, indent=2, ensure_ascii=False)
+def process_sheet(sheet_id, ranges, row_builder,row_builder_socmed, type, fixed_tab=None):
+    # brand_total = len(ranges)
 
-        # print(f"Saved → {out_file.resolve()}")   # e.g. /home/user/project/bo_response.json
+    with Progress(
+        SpinnerColumn(style="green"),
+        TextColumn("[bold blue]{task.description}"),
+        BarColumn(
+            bar_width=40,
+            complete_style="bright_cyan",
+            finished_style="bright_green",
+            pulse_style="dim",
+        ),
+        TextColumn("{task.completed}/{task.total}", style="bold"),
+        console=console,
+        transient=False,  # Keep bar after completion
+    ) as progress:
 
-    except Exception as exc:
-        print(f"[ERROR] Could not fetch BO data: {exc}")
+        task = progress.add_task(f"[white]Processing {type}", total=len(ranges))
 
-    print(f"Finished processing brand: {brand}\n")
+        for brand, rng in ranges.items():
+            try:
+                progress.update(task, description=f"[cyan]{type}: {brand}")
+                
+                kw = SpreadsheetController(sheet_id, rng).get_keywords()
+                if not kw:
+                    console.log(f"[yellow]{brand}: no keywords")
+                    progress.advance(task)
+                    continue
+
+                dest_sheet = kw[1] if len(kw) > 1 else sheet_id
+                tab_name   = fixed_tab or brand
+                print(f"fixed_tab: {fixed_tab}, dest_sheet: {dest_sheet}, TabName: {tab_name}")
+
+                data = AcquisitionController(
+                    email=USERNAME, password=PASSWORD,
+                    currency="all", currency_type=-1,
+                    brand=brand, targetdate=target_date
+                )
+                # .fetch_bo_batched(type, kw, target_date, batch_size=5)["data"]
+                out  = fetch_dual(type, data, kw, target_date)
+                data_aff   = out["data"]          # byPlayer and Affiliates
+                data_soc   = out["socmed_data"]   # socmed affiliates
+
+                # print(data_aff)
+                print("Writing rows to spreadsheet…................................")
+                rows = [row_builder(r) for r in data_aff]
+                sheet = Sheet(spreadsheet=dest_sheet, tab=tab_name, type=type)
+                sheet.append_rows_return_last(rows, debug=True)
+                print("Done writing rows to spreadsheet.............................")
+                # check if it has anything
+                if not data_soc:             # True for [] or None
+                    print("No Social‑Media rows found")
+                else:
+
+                    print(f"{len(data_soc)} Social‑Media rows")
+                    rows2 = [row_builder_socmed(r) for r in data_soc]
+                    sheet2 = Sheet(spreadsheet=dest_sheet, tab="*Daily_Data (Aff)", type=type)
+                    sheet2.append_rows_return_last(rows2, debug=True)
+                    
+                console.log(f"[green]{brand}: {len(rows)} rows → {tab_name}")
+                
+
+            except Exception as e:
+                console.log(f"[red]{brand} ERROR: {e}")
+
+            progress.advance(task)  # <- This is what animates the bar
+
+
+
+# 1️⃣  SocialMedia ➜ fixed tab "*Daily_Data (Player)"
+process_sheet(
+    SOCIAL_SHEET_ID, SOCIAL_RANGES, build_social_row, build_affiliate_row_socmed, "SocialMedia",
+    fixed_tab="*Daily_Data (Player)")
+
+# 2️⃣  Affiliates ➜ tab derived from range ("Affiliates")
+#     i.e. "Affiliates!A1:A" → "Affiliates"
+process_sheet(
+    AFFILIATE_SHEET_ID, AFFILIATE_RANGES, build_affiliate_row, build_affiliate_row_socmed,  # fixed_tab=None (default behavior, no fixed tab)
+    type="Affiliates"  # type is not used in this context, but kept for consistency
+)
