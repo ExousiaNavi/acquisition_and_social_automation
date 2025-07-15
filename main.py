@@ -39,10 +39,10 @@ sheetdate = yesterday.strftime("%d/%m/%Y")  # → "2025/07/13"
 #     (sheet‑tab followed by cell range)
 # ------------------------------------------------------------------
 RANGES = {
-    "BAJI"     : "BRAND!A1:A",
-    "SIX6S"    : "BRAND!B1:B",
-    "JEETBUZZ" : "BRAND!C1:C",
-    "CITINOW"  : "BRAND!D1:D",
+    "BAJI"     : "SocialMedia!A1:A",
+    "SIX6S"    : "SocialMedia!B1:B",
+    "JEETBUZZ" : "SocialMedia!C1:C",
+    "CITINOW"  : "SocialMedia!D1:D",
 }
 
 for brand, sheet_range in RANGES.items():
