@@ -33,7 +33,7 @@ class BoDataAPI:
         data_type: str,
         keywords: List[str],
         target_date: str,
-        batch_size: int = 3,
+        batch_size: int = 5,
         max_retries: int = 3,
     ) -> List[Dict[str, Any]]:
         """
@@ -155,8 +155,16 @@ class BoDataAPI:
             if not isinstance(payload.get("aaData", []), list):
                 logging.error("Invalid response format: aaData is not a list")
                 return []
-                
-            return payload["aaData"]
+
+            # Log the raw response size before returning
+            rows = payload["aaData"]
+            # print("------------------------------------------------------------------")
+            # print(f"  → API returned {len(rows)} rows for Page {page}")  # <-- NEW LINE
+            # # print(rows)
+            # print("------------------------------------------------------------------")
+            return rows
+        
+            # return payload["aaData"]
             
         except requests.exceptions.RequestException as e:
             logging.error(f"Request failed: {str(e)}")
