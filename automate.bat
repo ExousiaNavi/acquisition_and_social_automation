@@ -11,12 +11,12 @@ if not exist env\Scripts\python.exe (
 call env\Scripts\activate.bat
 
 :: ───────── 3.  Install deps only the FIRST time
-::            (flag file venv\.deps_ok tells us we’re done)
+::            (flag file env\.deps_ok tells us we’re done)
 if not exist env\.deps_ok (
     echo [setup] Installing Python packages...
     pip install -r requirements.txt
 
-    echo done> venv\.deps_ok
+    echo done> env\.deps_ok
 )
 
 :: ───────── 4.  Run your code ────────────────────────────

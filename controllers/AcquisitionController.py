@@ -150,24 +150,39 @@ class AcquisitionController:
         #             break
         #         page += 1
 
+        print("Initialized API for fetching data...")
         api = BoDataAPI(session=self.session,cookies=self.cookies,currency_type=self._currency_type, page_size=page_size)
-        
+        print("-------------------------------------------------------------------------------------")
+        print("Initialized API for fetching data completed...")
+        print("-------------------------------------------------------------------------------------")
         # ---- end of batches ----------------------------------------------- 
         # 🔄  Delegate filtering/renaming to the helper
+        print("Identifying processing type:", type)
         if type == "SocialMedia":
+            print("Collecting SocialMedia data for player...")
             all_rows_socmed_player = api.fetch(endpoint=urls[2],data_type="SocialMedia", keywords=keywords,target_date=targetdate, batch_size=batch_size)
             byPlayer = ByPlayer()   # Import the helper class
             filtered_rows = byPlayer.filter_rows(all_rows_socmed_player)
-            
+            print("-------------------------------------------------------------------------------------")
+            print("Collecting SocialMedia data for player completed...")
+            print("-------------------------------------------------------------------------------------")
+            print("Collecting SocialMedia data for affiliates...")
             all_rows_socmend_aff = api.fetch(endpoint=urls[3],data_type="Affiliates", keywords=keywords,target_date=targetdate, batch_size=batch_size)
             byAffliateSocmed = ByAffiliateSocialMedia()  # Import the helper class
             filtered_rows_socmed = byAffliateSocmed.filter_rows(all_rows_socmend_aff)
+            print("-------------------------------------------------------------------------------------")
+            print("Collecting SocialMedia data for affiliates completed...")
+            print("-------------------------------------------------------------------------------------")
         else:
+            print("Collecting Affiliate data...")
             all_rows_aff = api.fetch(endpoint=urls[2],data_type="Affiliates", keywords=keywords,target_date=targetdate, batch_size=batch_size)
             byAffliate = ByAffiliate()  # Import the helper class
             filtered_rows = byAffliate.filter_rows(all_rows_aff)    
-            
+            print("-------------------------------------------------------------------------------------")
+            print("Collecting Affiliate data completed...")
+            print("-------------------------------------------------------------------------------------")
         print("Fetching Completed.......:", type)
+        print("-------------------------------------------------------------------------------------")
         return {
             "status": 200,
             "text": "Data fetched and filtered successfully.",
