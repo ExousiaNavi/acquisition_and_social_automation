@@ -85,7 +85,7 @@ class AcquisitionController:
     # ────────────────────────────────────────────────────────────
     # Public helper: fetch every keyword in batches of five
     # ────────────────────────────────────────────────────────────
-    def fetch_bo_batched(self, type: str, keywords: List[str], targetdate:str, batch_size: int = 5, page_size: int = 100):
+    def fetch_bo_batched(self, type: str, keywords: List[str], targetdate:str, batch_size: int = 3, page_size: int = 100):
         """
         Fetch BO data for an arbitrary keyword list, five at a time.
         Returns: dict(status, text, data=[…], total=int)

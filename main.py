@@ -70,7 +70,7 @@ console = Console(force_terminal=True,
                   color_system="truecolor")
 
 
-def fetch_dual(type, ac: AcquisitionController, kw, target_date, batch=5):
+def fetch_dual(type, ac: AcquisitionController, kw, target_date, batch=3):
     """Return both Affiliates and SocialMedia data in one dict."""
     if type == "Affiliates":
         aff_rows = ac.fetch_bo_batched("Affiliates",  kw, target_date, batch)["data"]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
