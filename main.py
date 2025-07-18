@@ -124,22 +124,22 @@ def process_sheet(sheet_id, ranges, row_builder,row_builder_socmed, type, fixed_
                 data_soc   = out["socmed_data"]   # socmed affiliates
 
                 # # print(data_aff)
-                # print("Writing rows to spreadsheet…................................")
-                # rows = [row_builder(r) for r in data_aff]
-                # sheet = Sheet(spreadsheet=dest_sheet, tab=tab_name, type=type)
-                # sheet.append_rows_return_last(rows, debug=True)
-                # print("Done writing rows to spreadsheet.............................")
-                # # check if it has anything
-                # if not data_soc:             # True for [] or None
-                #     print("No Social‑Media rows found")
-                # else:
+                print("Writing rows to spreadsheet…................................")
+                rows = [row_builder(r) for r in data_aff]
+                sheet = Sheet(spreadsheet=dest_sheet, tab=tab_name, type=type)
+                sheet.append_rows_return_last(rows, debug=True)
+                print("Done writing rows to spreadsheet.............................")
+                # check if it has anything
+                if not data_soc:             # True for [] or None
+                    print("No Social‑Media rows found")
+                else:
 
-                #     print(f"{len(data_soc)} Social‑Media rows")
-                #     rows2 = [row_builder_socmed(r) for r in data_soc]
-                #     sheet2 = Sheet(spreadsheet=dest_sheet, tab="*Daily_Data (Aff)", type=type)
-                #     sheet2.append_rows_return_last(rows2, debug=True)
+                    print(f"{len(data_soc)} Social‑Media rows")
+                    rows2 = [row_builder_socmed(r) for r in data_soc]
+                    sheet2 = Sheet(spreadsheet=dest_sheet, tab="*Daily_Data (Aff)", type=type)
+                    sheet2.append_rows_return_last(rows2, debug=True)
                     
-                # console.log(f"[green]{brand}: {len(rows)} rows → {tab_name}")
+                console.log(f"[green]{brand}: {len(rows)} rows → {tab_name}")
                 
 
             except Exception as e:
